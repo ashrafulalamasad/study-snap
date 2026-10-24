@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { callModelStreaming, type ModelMessage } from "@/lib/openrouter";
+import { callModel, callModelStreaming, cleanModelOutput, type ModelMessage, type ModelContentPart } from "@/lib/ai";
 import { getAnalyzePrompt } from "@/lib/prompts";
 
 // JSON schema for validation
@@ -31,8 +31,8 @@ function validateResult(data: unknown): data is AnalyzeResult {
   if (typeof d.summary !== "string") return false;
   if (!Array.isArray(d.keyPoints)) return false;
   if (!Array.isArray(d.focusTopics)) return false;
-  if (!Array.isArray(d.mcq) || d.mcq.length < 1) return false;
-  if (!Array.isArray(d.shortQuestions) || d.shortQuestions.length < 1)
+  if (!Array.isArray(d.mcq) || d.mcq.length !== 5) return false;
+  if (!Array.isArray(d.shortQuestions) || d.shortQuestions.length !== 3)
     return false;
 
   for (const q of d.mcq as Record<string, unknown>[]) {
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
     // Build multimodal message
     const systemPrompt = getAnalyzePrompt(language as "bn" | "en");
 
-    const userContent: import("@/lib/openrouter").ModelContentPart[] = [
+    const userContent: ModelContentPart[] = [
       {
         type: "text" as const,
         text:
@@ -162,27 +162,47 @@ export async function POST(req: NextRequest) {
     const responseStream = new ReadableStream({
       async start(controller) {
         try {
-          const { stream, fullText } = await callModelStreaming(messages);
-          const reader = stream.getReader();
-
-          // Forward chunks to the client
+          const { reader } = await callModelStreaming(messages);
+          const decoder = new TextDecoder();
+          let fullText = "";
           let reading = true;
+
+          // Forward chunks to the client and accumulate full text
           while (reading) {
             const { done, value } = await reader.read();
-            if (done) {
-              reading = false;
-              break;
+            if (done) break;
+
+            const chunkStr = decoder.decode(value, { stream: true });
+            const lines = chunkStr.split("\n");
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed.startsWith("data: ")) continue;
+              const dataStr = trimmed.slice(6);
+
+              if (dataStr === "[DONE]") {
+                reading = false;
+                break;
+              }
+
+              try {
+                const parsed = JSON.parse(dataStr);
+                const delta = parsed.choices?.[0]?.delta?.content;
+                if (delta) {
+                  fullText += delta;
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ chunk: delta })}\n\n`)
+                  );
+                }
+              } catch {
+                // Partial JSON, skip
+              }
             }
-            // Send chunk as SSE event
-            const text = new TextDecoder().decode(value);
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ chunk: text })}\n\n`)
-            );
           }
 
-          // Get the full text and parse it
-          const rawText = await fullText;
-          const jsonStr = extractJSON(rawText);
+          // Clean reasoning tags and parse JSON
+          const cleanedText = cleanModelOutput(fullText);
+          const jsonStr = extractJSON(cleanedText);
 
           let result: AnalyzeResult;
           try {
@@ -190,14 +210,13 @@ export async function POST(req: NextRequest) {
           } catch {
             // Retry: ask the model to fix the JSON
             console.error("[analyze] First JSON parse failed, retrying...");
-            const { callModel } = await import("@/lib/openrouter");
             const fixedText = await callModel([
               {
                 role: "system",
                 content:
                   "Fix the following broken JSON and return ONLY valid JSON with no other text:",
               },
-              { role: "user", content: rawText },
+              { role: "user", content: cleanedText },
             ]);
             const fixedJson = extractJSON(fixedText);
             result = JSON.parse(fixedJson);
@@ -269,8 +288,7 @@ export async function POST(req: NextRequest) {
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
-                error:
-                  error.message || "Failed to analyze notes. Please try again.",
+                error: "Model is busy, switching to a backup model… Please try again.",
               })}\n\n`
             )
           );

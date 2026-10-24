@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { callModel, type ModelMessage } from "@/lib/openrouter";
+import { callModel, type ModelMessage } from "@/lib/ai";
 import { getChatPrompt } from "@/lib/prompts";
 
 export async function POST(req: NextRequest) {
