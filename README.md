@@ -5,7 +5,7 @@
 [![Prisma 7](https://img.shields.io/badge/Prisma-7.10.1-2D3748?logo=prisma)](https://www.prisma.io/)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com/)
 [![TailwindCSS v4](https://img.shields.io/badge/TailwindCSS-v4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
-[![OpenRouter](https://img.shields.io/badge/OpenRouter-Gemma_4_31B-6366F1)](https://openrouter.ai/)
+[![Google AI Studio](https://img.shields.io/badge/Google_AI_Studio-Gemma_4_31B-4285F4)](https://aistudio.google.com/)
 
 ---
 
@@ -33,16 +33,16 @@ University students (particularly at institutions like IIUC in Bangladesh) face 
 ### Open-Weight Vision & Reasoning Stack
 StudySnap strictly uses open-weight models with **zero closed proprietary model APIs**:
 
-1. **Primary Vision Model**: [`google/gemma-4-31b-it:free`](https://openrouter.ai/models/google/gemma-4-31b-it:free) via [OpenRouter](https://openrouter.ai)
-   - Large multimodal model capable of deciphering handwritten Bengali script, bilingual notes, diagrams, and exam papers.
-2. **Secondary Vision Fallback**: [`google/gemma-4-26b-a4b-it:free`](https://openrouter.ai/models/google/gemma-4-26b-a4b-it:free) via OpenRouter
-   - Automatically engaged if the primary model reaches rate limits or encounters an error.
-3. **Tertiary Text Fallback**: [`qwen/qwen3.8-27b`](https://groq.com) via Groq API.
+1. **Primary Vision Model**: `gemma-4-31b-it` via [Google AI Studio](https://aistudio.google.com) OpenAI-compatible endpoint (`https://generativelanguage.googleapis.com/v1beta/openai/`)
+   - Dense multimodal model capable of deciphering handwritten Bengali script, bilingual notes, diagrams, and exam papers.
+2. **Secondary Vision Fallback**: `gemma-4-26b-a4b-it` via Google AI Studio
+   - Automatically engaged if the primary model encounters an error.
+3. **Emergency Fallback**: [`qwen/qwen3.8-27b`](https://groq.com) via Groq API.
 4. **Speech-to-Text (STT)**: Browser Web Speech API with fallback support for [`groq/whisper-large-v3`](https://groq.com).
 5. **Speech Synthesis (TTS)**: Web SpeechSynthesis API supporting both `bn-BD` and `en-US` voices.
 
 ### The Core Efficiency Rule
-OpenRouter free models share a limit of 50 requests/day. StudySnap is architected around this constraint:
+StudySnap is architected for maximum speed and efficiency:
 - **One vision call per upload**: The model extracts note text, compiles the summary, identifies exam topics, generates 5 MCQs, and writes 3 short questions in a **single streaming multimodal invocation**.
 - **Client-side image resizing**: Images are scaled to $\le 1024\text{px}$ using HTML5 Canvas before upload, slashing network bandwidth, reducing processing latency, and conserving token quota.
 - **Single follow-up call**: Follow-up Q&A queries use lightweight text-only calls containing previously summarized context.
@@ -55,7 +55,7 @@ OpenRouter free models share a limit of 50 requests/day. StudySnap is architecte
 graph TD
     A[Student snaps 1-4 notes + optional past paper] --> B[Canvas client-side resize to 1024px]
     B --> C[POST /api/analyze SSE Stream]
-    C --> D[OpenRouter: Gemma 4 31B Vision]
+    C --> D[Google AI Studio: Gemma 4 31B Vision]
     D --> E[Strict JSON contract verification & fallback]
     E --> F[Supabase PostgreSQL via Prisma 7]
     F --> G[Interactive Results: Summary + Quiz + Proof Quotes]
@@ -76,7 +76,7 @@ graph TD
 ### Prerequisites
 - Node.js 18+ (tested on Node 20 & 22)
 - PostgreSQL database (Supabase instance)
-- OpenRouter API key
+- Google AI Studio API key (`GEMINI_API_KEY`)
 
 ### 1. Clone & Install
 ```bash
@@ -94,10 +94,10 @@ DATABASE_URL="postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supab
 # Supabase direct session connection (port 5432)
 DIRECT_URL="postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres"
 
-# OpenRouter API Key for Gemma Vision
-OPENROUTER_API_KEY="sk-or-v1-..."
+# Google AI Studio API Key for Gemma Vision
+GEMINI_API_KEY="AIzaSy..."
 
-# (Optional) Groq API Key for fallback
+# (Optional) Groq API Key for emergency fallback
 GROQ_API_KEY="gsk_..."
 ```
 
@@ -145,14 +145,14 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 7. What's Not Done Yet (Honest Disclosures)
 - **Authentication**: For hackathon velocity, session history and past papers are keyed to an anonymous browser-generated `deviceId` stored in `localStorage`. In a production deployment, this would be replaced with student institutional login (e.g., IIUC Student ID / Google OAuth).
-- **Offline PWA Sync**: Sessions currently require an active internet connection to stream vision inferences from OpenRouter. Adding ServiceWorker caching and indexedDB offline persistence is planned for v2.
+- **Offline PWA Sync**: Sessions currently require an active internet connection to stream vision inferences from Google AI Studio. Adding ServiceWorker caching and indexedDB offline persistence is planned for v2.
 - **Diagram Vectorization**: While the multimodal vision model reads handwritten diagrams and circuit sketches, generating interactive SVG re-drawings is slated for a future iteration.
 
 ---
 
 ## 8. Credits & Acknowledgments
 - **Institution**: International Islamic University Chittagong (IIUC), Bangladesh
-- **AI Models**: Google DeepMind Gemma open-weight team ([Gemma 4 31B Vision](https://openrouter.ai/models/google/gemma-4-31b-it:free))
-- **Inference Infrastructure**: [OpenRouter.ai](https://openrouter.ai) & [Groq](https://groq.com)
+- **AI Models**: Google DeepMind Gemma open-weight team ([Gemma 4 31B Vision](https://aistudio.google.com))
+- **Inference Infrastructure**: [Google AI Studio](https://aistudio.google.com) & [Groq](https://groq.com)
 - **Database & Hosting**: [Supabase](https://supabase.com) & [Vercel](https://vercel.com)
 - **Framework**: [Next.js](https://nextjs.org) & [Prisma ORM](https://prisma.io)

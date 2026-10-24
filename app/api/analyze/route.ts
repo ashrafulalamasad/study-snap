@@ -53,8 +53,8 @@ function validateResult(data: unknown): data is AnalyzeResult {
 }
 
 function extractJSON(text: string): string {
-  // Try to extract JSON from possible markdown fences or surrounding text
-  let cleaned = text.trim();
+  // Strip <thought>...</thought> blocks if returned by model
+  let cleaned = text.replace(/<thought>[\s\S]*?<\/thought>/gi, "").trim();
 
   // Remove markdown code fences
   const fenceMatch = cleaned.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
