@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, X, HelpCircle, Quote, Tag } from "lucide-react";
+import { useDeviceId } from "@/lib/deviceId";
 
 export interface QuestionData {
   id: string;
@@ -30,6 +31,7 @@ export function QuizCard({
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [answered, setAnswered] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const deviceId = useDeviceId();
 
   // Parse options if stored as JSON string or array
   const optionsList: string[] = Array.isArray(question.options)
@@ -39,7 +41,7 @@ export function QuizCard({
     : [];
 
   const handleSelect = async (index: number) => {
-    if (answered || submitting) return;
+    if (answered || submitting || !deviceId) return;
 
     setSelectedIndex(index);
     setAnswered(true);
@@ -60,6 +62,7 @@ export function QuizCard({
         body: JSON.stringify({
           questionId: question.id,
           correct: isCorrect,
+          deviceId,
         }),
       });
     } catch (err) {

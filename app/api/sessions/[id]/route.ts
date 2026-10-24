@@ -7,6 +7,14 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const deviceId = new URL(req.url).searchParams.get("deviceId");
+
+    if (!deviceId) {
+      return NextResponse.json(
+        { error: "deviceId is required" },
+        { status: 400 }
+      );
+    }
 
     const session = await prisma.session.findUnique({
       where: { id },
@@ -27,6 +35,10 @@ export async function GET(
         { error: "Session not found" },
         { status: 404 }
       );
+    }
+
+    if (session.deviceId !== deviceId) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     return NextResponse.json({ session });

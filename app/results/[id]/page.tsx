@@ -9,6 +9,7 @@ import { QuizCard, type QuestionData } from "@/app/components/QuizCard";
 import { ShortQuestionCard } from "@/app/components/ShortQuestionCard";
 import { ScoreCard } from "@/app/components/ScoreCard";
 import { ChatBox } from "@/app/components/ChatBox";
+import { useDeviceId } from "@/lib/deviceId";
 
 interface SessionDetail {
   id: string;
@@ -32,12 +33,16 @@ function SessionViewer({ sessionId }: { sessionId: string }) {
   const [filterWeakOnly, setFilterWeakOnly] = useState(false);
   const [quizKey, setQuizKey] = useState(0); // For retaking the quiz
   const [activeTab, setActiveTab] = useState<"quiz" | "short" | "chat">("quiz");
+  const deviceId = useDeviceId();
 
   useEffect(() => {
     async function loadSession() {
+      if (!deviceId) return;
       try {
         setLoading(true);
-        const res = await fetch(`/api/sessions/${sessionId}`);
+        const res = await fetch(
+          `/api/sessions/${sessionId}?deviceId=${encodeURIComponent(deviceId)}`
+        );
         if (!res.ok) {
           throw new Error(`Failed to load session (status ${res.status})`);
         }
@@ -68,7 +73,7 @@ function SessionViewer({ sessionId }: { sessionId: string }) {
     }
 
     loadSession();
-  }, [sessionId, quizKey]);
+  }, [deviceId, sessionId, quizKey]);
 
   const handleAnswer = (questionId: string, correct: boolean, topic: string) => {
     setAnswers((prev) => ({
