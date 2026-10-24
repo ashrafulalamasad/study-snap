@@ -36,7 +36,7 @@ function validateResult(data: unknown): data is AnalyzeResult {
   if (typeof d.summary !== "string") return false;
   if (!Array.isArray(d.keyPoints)) return false;
   if (!Array.isArray(d.focusTopics)) return false;
-  if (!Array.isArray(d.mcq) || d.mcq.length !== 5) return false;
+  if (!Array.isArray(d.mcq) || d.mcq.length !== 10) return false;
   if (!Array.isArray(d.shortQuestions) || d.shortQuestions.length !== 3)
     return false;
 
@@ -80,7 +80,8 @@ function extractJSON(text: string): string {
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const language = (formData.get("language") as string) || "en";
+    const requestedLanguage = formData.get("language");
+    const language = requestedLanguage === "bn" ? "bn" : "en";
     const deviceId = formData.get("deviceId") as string;
 
     if (!deviceId) {
@@ -109,28 +110,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Collect past-question images (up to 2)
-    const pastQuestionImages: string[] = [];
-    for (let i = 0; i < 2; i++) {
-      const file = formData.get(`past_${i}`) as File | null;
-      if (file) {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const base64 = buffer.toString("base64");
-        const mimeType = file.type || "image/jpeg";
-        pastQuestionImages.push(`data:${mimeType};base64,${base64}`);
-      }
-    }
-
     // Build multimodal message
-    const systemPrompt = getAnalyzePrompt(language as "bn" | "en");
+    const systemPrompt = getAnalyzePrompt(language);
 
     const userContent: ModelContentPart[] = [
       {
         type: "text" as const,
-        text:
-          pastQuestionImages.length > 0
-            ? `Here are my lecture notes (${noteImages.length} image(s)) and past-question papers (${pastQuestionImages.length} image(s)). Please analyze them.`
-            : `Here are my lecture notes (${noteImages.length} image(s)). Please analyze them.`,
+        text: `Analyze every uploaded note/question file (${noteImages.length} file(s)). The requested output language is ${
+          language === "bn" ? "Bangla (বাংলা)" : "English"
+        }.`,
       },
     ];
 
@@ -140,20 +128,6 @@ export async function POST(req: NextRequest) {
         type: "image_url" as const,
         image_url: { url: img },
       });
-    }
-
-    // Add past-question images
-    if (pastQuestionImages.length > 0) {
-      userContent.push({
-        type: "text" as const,
-        text: "The following are past-exam question papers. Identify the topics tested and prioritize them in focusTopics and in the quiz questions:",
-      });
-      for (const img of pastQuestionImages) {
-        userContent.push({
-          type: "image_url" as const,
-          image_url: { url: img },
-        });
-      }
     }
 
     const messages: ModelMessage[] = [
@@ -271,18 +245,6 @@ export async function POST(req: NextRequest) {
               questions: true,
             },
           });
-
-          // Save past paper if images were provided
-          if (pastQuestionImages.length > 0) {
-            await prisma.pastPaper.create({
-              data: {
-                deviceId,
-                course: result.title,
-                topics: result.focusTopics,
-                text: result.summary.slice(0, 500),
-              },
-            });
-          }
 
           // Send final result with session data + short questions
           controller.enqueue(

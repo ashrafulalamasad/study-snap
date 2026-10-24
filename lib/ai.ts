@@ -91,7 +91,7 @@ export async function callModel(
         JSON.stringify({
           model: model.id,
           messages,
-          max_tokens: 8192,
+          max_tokens: 12000,
           temperature: 0.3,
         }),
         signal
@@ -133,7 +133,7 @@ export async function callModelStreaming(
         JSON.stringify({
           model: model.id,
           messages,
-          max_tokens: 8192,
+          max_tokens: 12000,
           temperature: 0.3,
         }),
         signal

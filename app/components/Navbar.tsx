@@ -19,8 +19,8 @@ export function Navbar() {
       <header className="sticky top-0 z-40 w-full glass-panel border-b border-white/10 px-4 py-3 sm:px-8">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition-transform">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-[#faf8f3] border border-[#1c1b1a] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+              <Sparkles className="w-5 h-5 text-[#1c1b1a]" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">

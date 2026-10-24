@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, ArrowRight, BookOpen, Brain, CheckCircle, ShieldAlert, Loader2, FileQuestion } from "lucide-react";
+import { Sparkles, ArrowRight, BookOpen, CheckCircle, ShieldAlert, Loader2 } from "lucide-react";
 import { UploadZone, type PreparedImage } from "./components/UploadZone";
 import { LanguageToggle } from "./components/LanguageToggle";
 import { useDeviceId } from "@/lib/deviceId";
@@ -12,7 +12,6 @@ export default function HomePage() {
   const deviceId = useDeviceId();
 
   const [noteImages, setNoteImages] = useState<PreparedImage[]>([]);
-  const [pastImages, setPastImages] = useState<PreparedImage[]>([]);
   const [language, setLanguage] = useState<"bn" | "en">("en");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [streamProgress, setStreamProgress] = useState<string>("");
@@ -33,12 +32,8 @@ export default function HomePage() {
       formData.append(`note_${i}`, img.file);
     });
 
-    pastImages.forEach((img, i) => {
-      formData.append(`past_${i}`, img.file);
-    });
-
     try {
-      setStreamProgress("Reading handwritten pages with Gemma 4 31B Vision...");
+      setStreamProgress("Reading your uploaded files with Gemma 4 31B...");
 
       const response = await fetch("/api/analyze", {
         method: "POST",
@@ -128,7 +123,7 @@ export default function HomePage() {
 
         <p className="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
           Upload 1–4 photos of handwritten notebooks or board slides. Get an instant, structured summary, 
-          verified 5-question quiz with exact note line citations, and exam-topic detection.
+          verified 10-question quiz with exact note line citations.
         </p>
 
         {/* Value Prop Badges */}
@@ -142,8 +137,8 @@ export default function HomePage() {
             <span>Bangla & English Output</span>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/5">
-            <FileQuestion className="w-3.5 h-3.5 text-purple-400" />
-            <span>Past-Paper Exam Prioritization</span>
+            <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Study only from your upload</span>
           </div>
         </div>
       </div>
@@ -170,8 +165,6 @@ export default function HomePage() {
         <UploadZone
           noteImages={noteImages}
           setNoteImages={setNoteImages}
-          pastImages={pastImages}
-          setPastImages={setPastImages}
           disabled={isAnalyzing}
         />
 
