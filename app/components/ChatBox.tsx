@@ -31,7 +31,6 @@ export function ChatBox({ sessionId }: ChatBoxProps) {
   const [isListening, setIsListening] = useState(false);
   const [activeSpeechId, setActiveSpeechId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -40,31 +39,21 @@ export function ChatBox({ sessionId }: ChatBoxProps) {
   // Voice speech synthesis
   const readMessageAloud = async (id: string, text: string) => {
     if (activeSpeechId === id) {
-      audioRef.current?.pause();
-      audioRef.current = null;
       setActiveSpeechId(null);
       return;
     }
 
     setActiveSpeechId(id);
-    try {
-      const response = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, language: "en" }),
-      });
-      if (!response.ok) throw new Error("ElevenLabs could not generate audio.");
-      const audio = new Audio(URL.createObjectURL(await response.blob()));
-      audioRef.current = audio;
-      audio.onended = () => setActiveSpeechId(null);
-      await audio.play();
-    } catch (error) {
-      console.error(
-        "ElevenLabs audio failed:",
-        error instanceof Error ? error.message : "unknown error"
-      );
+    if (!("speechSynthesis" in window)) {
       setActiveSpeechId(null);
+      return;
     }
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+    utterance.onend = () => setActiveSpeechId(null);
+    utterance.onerror = () => setActiveSpeechId(null);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
   };
 
   // Browser speech recognition (Voice STT)

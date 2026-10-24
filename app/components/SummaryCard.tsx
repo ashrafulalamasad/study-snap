@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { BookOpen, CheckCircle2, Volume2, VolumeX, Copy, Check } from "lucide-react";
 
 interface SummaryCardProps {
@@ -18,47 +18,26 @@ export function SummaryCard({
 }: SummaryCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [speechError, setSpeechError] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioUrlRef = useRef<string | null>(null);
 
   const toggleSpeech = async () => {
     if (isPlaying) {
-      audioRef.current?.pause();
-      audioRef.current = null;
-      if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
-      audioUrlRef.current = null;
+      window.speechSynthesis.cancel();
       setIsPlaying(false);
       return;
     }
 
     const textToRead = `${title}. ${summary}. Key points: ${keyPoints.join(". ")}`;
     setIsPlaying(true);
-    setSpeechError(null);
-    try {
-      const response = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: textToRead, language }),
-      });
-
-      if (!response.ok || !response.body) {
-        throw new Error("ElevenLabs could not generate audio.");
-      }
-      const audioUrl = URL.createObjectURL(await response.blob());
-      audioUrlRef.current = audioUrl;
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-      audio.onended = () => {
-        setIsPlaying(false);
-        URL.revokeObjectURL(audioUrl);
-        audioUrlRef.current = null;
-      };
-      await audio.play();
-    } catch (error) {
+    if (!("speechSynthesis" in window)) {
       setIsPlaying(false);
-      setSpeechError(error instanceof Error ? error.message : "ElevenLabs audio failed.");
+      return;
     }
+    const utterance = new SpeechSynthesisUtterance(textToRead);
+    utterance.lang = language === "bn" ? "bn-BD" : "en-US";
+    utterance.onend = () => setIsPlaying(false);
+    utterance.onerror = () => setIsPlaying(false);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
   };
 
   const copyToClipboard = async () => {
@@ -116,11 +95,6 @@ export function SummaryCard({
               </>
             )}
           </button>
-          {speechError && (
-            <span className="text-[11px] text-rose-600" role="status">
-              {speechError}
-            </span>
-          )}
 
           <button
             type="button"
