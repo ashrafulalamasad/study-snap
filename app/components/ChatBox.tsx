@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Mic, MicOff, Volume2, VolumeX, Sparkles, Loader2 } from "lucide-react";
+import { Send, Bot, User, Mic, MicOff, Volume2, VolumeX, BookOpen, Loader2 } from "lucide-react";
 import { useDeviceId } from "@/lib/deviceId";
 
 interface Message {
@@ -165,7 +165,7 @@ export function ChatBox({ sessionId }: ChatBoxProps) {
           <div>
             <h3 className="text-sm font-semibold text-white flex items-center gap-1.5">
               Ask Your Notes
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
             </h3>
             <p className="text-[11px] text-slate-400">
               Grounded exclusively in this session&apos;s lecture content

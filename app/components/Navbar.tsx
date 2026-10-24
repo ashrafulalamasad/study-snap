@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sparkles, History, FileText, Camera } from "lucide-react";
+import { BookOpen, History, FileText, Camera } from "lucide-react";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -20,7 +20,7 @@ export function Navbar() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="w-9 h-9 rounded-xl bg-[#faf8f3] border border-[#1c1b1a] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
-              <Sparkles className="w-5 h-5 text-[#1c1b1a]" />
+              <BookOpen className="w-5 h-5 text-[#1c1b1a]" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Award, AlertTriangle, RotateCcw, Target, Sparkles, CheckCircle2 } from "lucide-react";
+import { Award, AlertTriangle, RotateCcw, Target, BookOpen, CheckCircle2 } from "lucide-react";
 
 interface ScoreCardProps {
   total: number;
@@ -112,7 +112,7 @@ export function ScoreCard({
                 : "bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30"
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <BookOpen className="w-3.5 h-3.5" />
             <span>
               {hasWeakOnlyFilterActive
                 ? "Showing Weak Topics Only"

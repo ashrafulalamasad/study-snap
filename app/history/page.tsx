@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { History, Sparkles, ArrowLeft, Loader2 } from "lucide-react";
+import { History, BookOpen, ArrowLeft, Loader2 } from "lucide-react";
 import { SessionList, type SessionItem } from "@/app/components/SessionList";
 import { useDeviceId } from "@/lib/deviceId";
 
@@ -60,7 +60,7 @@ export default function HistoryPage() {
           href="/"
           className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
         >
-          <Sparkles className="w-3.5 h-3.5" />
+          <BookOpen className="w-3.5 h-3.5" />
           <span>New Snap</span>
         </Link>
       </div>

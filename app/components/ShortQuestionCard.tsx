@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeOff, Sparkles } from "lucide-react";
+import { Eye, EyeOff, BookOpen } from "lucide-react";
 
 interface ShortQuestionProps {
   questionNumber: number;
@@ -48,7 +48,7 @@ export function ShortQuestionCard({
       {showAnswer ? (
         <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs sm:text-sm text-purple-100 leading-relaxed">
           <div className="flex items-center gap-1.5 text-purple-300 font-semibold mb-1 text-xs">
-            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+            <BookOpen className="w-3.5 h-3.5 text-purple-400" />
             <span>Model Answer:</span>
           </div>
           <p>{modelAnswer}</p>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { Search, FileText, ArrowLeft, Sparkles, Filter, Database, BookOpen } from "lucide-react";
+import { Search, FileText, ArrowLeft, Filter, Database, BookOpen } from "lucide-react";
 import { PastPaperCard } from "@/app/components/PastPaperCard";
 import type { StoragePastPaper } from "@/lib/pastPapers";
 
@@ -79,7 +79,7 @@ export default function PastPapersPage() {
           href="/"
           className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 transition-all"
         >
-          <Sparkles className="w-3.5 h-3.5" />
+          <BookOpen className="w-3.5 h-3.5" />
           <span>Snap Notes & Study</span>
         </Link>
       </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use, Suspense } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, HelpCircle, MessageSquare, Layers } from "lucide-react";
+import { ArrowLeft, BookOpen, HelpCircle, MessageSquare, Layers } from "lucide-react";
 import { SummaryCard } from "@/app/components/SummaryCard";
 import { FocusChips } from "@/app/components/FocusChips";
 import { QuizCard, type QuestionData } from "@/app/components/QuizCard";
@@ -96,7 +96,7 @@ function SessionViewer({ sessionId }: { sessionId: string }) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
         <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 animate-spin">
-          <Sparkles className="w-6 h-6" />
+          <BookOpen className="w-6 h-6" />
         </div>
         <p className="text-sm text-slate-300 font-medium">
           Loading your study session notes & quiz...
@@ -303,7 +303,7 @@ export default function ResultsPage({
       fallback={
         <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
           <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 animate-spin">
-            <Sparkles className="w-6 h-6" />
+            <BookOpen className="w-6 h-6" />
           </div>
           <p className="text-sm text-slate-300 font-medium">Loading session...</p>
         </div>

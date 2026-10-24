@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, ArrowRight, BookOpen, CheckCircle, ShieldAlert, Loader2 } from "lucide-react";
+import { ArrowRight, BookOpen, CheckCircle, ShieldAlert, Loader2 } from "lucide-react";
 import { UploadZone, type PreparedImage } from "./components/UploadZone";
 import { LanguageToggle } from "./components/LanguageToggle";
 import { useDeviceId } from "@/lib/deviceId";
@@ -16,6 +16,17 @@ export default function HomePage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [streamProgress, setStreamProgress] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const resetAfterHistoryRestore = () => {
+      setIsAnalyzing(false);
+      setStreamProgress("");
+      setError(null);
+    };
+
+    window.addEventListener("pageshow", resetAfterHistoryRestore);
+    return () => window.removeEventListener("pageshow", resetAfterHistoryRestore);
+  }, []);
 
   const handleAnalyze = async () => {
     if (noteImages.length === 0 || isAnalyzing || !deviceId) return;
@@ -109,7 +120,7 @@ export default function HomePage() {
       {/* Hero Section */}
       <div className="text-center space-y-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold shadow-sm animate-pulse-glow">
-          <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+          <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
           <span>Multimodal Open-Weight AI for University Students</span>
         </div>
 
@@ -213,7 +224,7 @@ export default function HomePage() {
             </>
           ) : (
             <>
-              <Sparkles className="w-5 h-5" />
+              <BookOpen className="w-5 h-5" />
               <span>
                 Analyze {noteImages.length > 0 ? `${noteImages.length} Page(s)` : "Notes"} & Generate Quiz
               </span>
