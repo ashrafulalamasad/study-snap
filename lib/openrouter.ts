@@ -10,14 +10,10 @@ export interface ModelContentPart {
   image_url?: { url: string };
 }
 
-// Model fallback chain
+// Model fallback chain: Primary is strictly google/gemma-4-31b-it:free
 const MODELS = [
   {
     id: "google/gemma-4-31b-it:free",
-    provider: "openrouter" as const,
-  },
-  {
-    id: "google/gemma-4-26b-a4b-it:free",
     provider: "openrouter" as const,
   },
   {
@@ -29,14 +25,14 @@ const MODELS = [
 function getProviderConfig(provider: "openrouter" | "groq") {
   if (provider === "openrouter") {
     const key = process.env.OPENROUTER_API_KEY;
-    if (!key) throw new Error("OPENROUTER_API_KEY is not set");
+    if (!key) throw new Error("OPENROUTER_API_KEY is not set in .env");
     return {
       url: "https://openrouter.ai/api/v1/chat/completions",
       key,
     };
   } else {
     const key = process.env.GROQ_API_KEY;
-    if (!key) throw new Error("GROQ_API_KEY is not set");
+    if (!key) throw new Error("GROQ_API_KEY is not set in .env");
     return {
       url: "https://api.groq.com/openai/v1/chat/completions",
       key,
@@ -44,8 +40,25 @@ function getProviderConfig(provider: "openrouter" | "groq") {
   }
 }
 
+function parseOpenRouterError(status: number, errorText: string, modelId: string): string {
+  try {
+    const parsed = JSON.parse(errorText);
+    if (parsed.error?.code === 429 || status === 429) {
+      return `${modelId} is temporarily rate-limited upstream on Google AI Studio. Please wait 10-20 seconds and try again.`;
+    }
+    if (parsed.error?.message) {
+      return `${modelId}: ${parsed.error.message}`;
+    }
+  } catch {
+    // raw text
+  }
+  return `Model ${modelId} returned ${status}: ${errorText}`;
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /**
- * Call a vision/text model with automatic fallback through the model chain.
+ * Call a vision/text model with automatic retry on 429 rate limit.
  * Returns the complete text response.
  */
 export async function callModel(
@@ -55,77 +68,87 @@ export async function callModel(
   let lastError: Error | null = null;
 
   for (const model of MODELS) {
-    // Skip Groq if no key is set (optional fallback)
+    // Skip Groq if no key is set
     if (model.provider === "groq" && !process.env.GROQ_API_KEY) {
       continue;
     }
 
-    try {
-      const config = getProviderConfig(model.provider);
-      console.log(`[openrouter] Trying model: ${model.id}`);
+    const maxRetries = model.provider === "openrouter" ? 3 : 1;
 
-      const response = await fetch(config.url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${config.key}`,
-          ...(model.provider === "openrouter"
-            ? {
-                "HTTP-Referer": "https://study-snap.vercel.app",
-                "X-Title": "StudySnap",
-              }
-            : {}),
-        },
-        body: JSON.stringify({
-          model: model.id,
-          messages,
-          max_tokens: 4096,
-          temperature: 0.3,
-        }),
-        signal,
-      });
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const config = getProviderConfig(model.provider);
+        console.log(`[openrouter] Trying model: ${model.id} (attempt ${attempt}/${maxRetries})`);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(
-          `[openrouter] ${model.id} returned ${response.status}: ${errorText}`
+        const response = await fetch(config.url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${config.key}`,
+            ...(model.provider === "openrouter"
+              ? {
+                  "HTTP-Referer": "https://study-snap.vercel.app",
+                  "X-Title": "StudySnap",
+                }
+              : {}),
+          },
+          body: JSON.stringify({
+            model: model.id,
+            messages,
+            max_tokens: 4096,
+            temperature: 0.3,
+          }),
+          signal,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(
+            `[openrouter] ${model.id} returned ${response.status}: ${errorText}`
+          );
+
+          if (response.status === 429 && attempt < maxRetries) {
+            console.log(`[openrouter] 429 rate limited, retrying in ${attempt * 2500}ms...`);
+            await sleep(attempt * 2500);
+            continue;
+          }
+
+          const friendlyMsg = parseOpenRouterError(response.status, errorText, model.id);
+          lastError = new Error(friendlyMsg);
+          break; // Move to next provider if retries exhausted
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+          console.error(`[openrouter] ${model.id} error:`, data.error);
+          lastError = new Error(
+            `Model ${model.id} error: ${data.error.message || JSON.stringify(data.error)}`
+          );
+          break;
+        }
+
+        const content = data.choices?.[0]?.message?.content;
+        if (!content) {
+          lastError = new Error(`Model ${model.id} returned empty content`);
+          break;
+        }
+
+        console.log(
+          `[openrouter] ${model.id} succeeded (${content.length} chars)`
         );
-        lastError = new Error(
-          `Model ${model.id} returned ${response.status}: ${errorText}`
-        );
-        continue;
+        return content;
+      } catch (err) {
+        const error = err as Error;
+        if (error.name === "AbortError") throw error;
+        console.error(`[openrouter] ${model.id} exception:`, error.message);
+        lastError = error;
+        break;
       }
-
-      const data = await response.json();
-
-      if (data.error) {
-        console.error(`[openrouter] ${model.id} error:`, data.error);
-        lastError = new Error(
-          `Model ${model.id} error: ${data.error.message || JSON.stringify(data.error)}`
-        );
-        continue;
-      }
-
-      const content = data.choices?.[0]?.message?.content;
-      if (!content) {
-        lastError = new Error(`Model ${model.id} returned empty content`);
-        continue;
-      }
-
-      console.log(
-        `[openrouter] ${model.id} succeeded (${content.length} chars)`
-      );
-      return content;
-    } catch (err) {
-      const error = err as Error;
-      if (error.name === "AbortError") throw error;
-      console.error(`[openrouter] ${model.id} exception:`, error.message);
-      lastError = error;
-      continue;
     }
   }
 
-  throw lastError || new Error("All models failed");
+  throw lastError || new Error("Failed to get response from google/gemma-4-31b-it:free");
 }
 
 /**
@@ -143,119 +166,129 @@ export async function callModelStreaming(
       continue;
     }
 
-    try {
-      const config = getProviderConfig(model.provider);
-      console.log(`[openrouter-stream] Trying model: ${model.id}`);
+    const maxRetries = model.provider === "openrouter" ? 3 : 1;
 
-      const response = await fetch(config.url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${config.key}`,
-          ...(model.provider === "openrouter"
-            ? {
-                "HTTP-Referer": "https://study-snap.vercel.app",
-                "X-Title": "StudySnap",
-              }
-            : {}),
-        },
-        body: JSON.stringify({
-          model: model.id,
-          messages,
-          max_tokens: 4096,
-          temperature: 0.3,
-          stream: true,
-        }),
-        signal,
-      });
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const config = getProviderConfig(model.provider);
+        console.log(`[openrouter-stream] Trying model: ${model.id} (attempt ${attempt}/${maxRetries})`);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(
-          `[openrouter-stream] ${model.id} returned ${response.status}: ${errorText}`
-        );
-        lastError = new Error(
-          `Model ${model.id} returned ${response.status}: ${errorText}`
-        );
-        continue;
-      }
-
-      if (!response.body) {
-        lastError = new Error(`Model ${model.id} returned no body`);
-        continue;
-      }
-
-      console.log(`[openrouter-stream] ${model.id} connected, streaming...`);
-
-      // Accumulate full text
-      let fullText = "";
-      let resolveFullText: (value: string) => void;
-      let rejectFullText: (reason: Error) => void;
-
-      const fullTextPromise = new Promise<string>((resolve, reject) => {
-        resolveFullText = resolve;
-        rejectFullText = reject;
-      });
-
-      const encoder = new TextEncoder();
-      const decoder = new TextDecoder();
-      const reader = response.body.getReader();
-
-      const stream = new ReadableStream<Uint8Array>({
-        async pull(controller) {
-          try {
-            const { done, value } = await reader.read();
-            if (done) {
-              controller.close();
-              resolveFullText(fullText);
-              return;
-            }
-
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split("\n");
-
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (!trimmed || !trimmed.startsWith("data: ")) continue;
-
-              const data = trimmed.slice(6);
-              if (data === "[DONE]") continue;
-
-              try {
-                const parsed = JSON.parse(data);
-                const delta = parsed.choices?.[0]?.delta?.content;
-                if (delta) {
-                  fullText += delta;
-                  controller.enqueue(encoder.encode(delta));
+        const response = await fetch(config.url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${config.key}`,
+            ...(model.provider === "openrouter"
+              ? {
+                  "HTTP-Referer": "https://study-snap.vercel.app",
+                  "X-Title": "StudySnap",
                 }
-              } catch {
-                // Partial JSON in SSE chunk, skip
-              }
-            }
-          } catch (err) {
-            const error = err as Error;
-            controller.error(error);
-            rejectFullText(error);
-          }
-        },
-        cancel() {
-          reader.cancel();
-          rejectFullText(new Error("Stream cancelled"));
-        },
-      });
+              : {}),
+          },
+          body: JSON.stringify({
+            model: model.id,
+            messages,
+            max_tokens: 4096,
+            temperature: 0.3,
+            stream: true,
+          }),
+          signal,
+        });
 
-      return { stream, fullText: fullTextPromise };
-    } catch (err) {
-      const error = err as Error;
-      if (error.name === "AbortError") throw error;
-      console.error(
-        `[openrouter-stream] ${model.id} exception:`,
-        error.message
-      );
-      lastError = error;
-      continue;
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(
+            `[openrouter-stream] ${model.id} returned ${response.status}: ${errorText}`
+          );
+
+          if (response.status === 429 && attempt < maxRetries) {
+            console.log(`[openrouter-stream] 429 rate limited, retrying in ${attempt * 2500}ms...`);
+            await sleep(attempt * 2500);
+            continue;
+          }
+
+          const friendlyMsg = parseOpenRouterError(response.status, errorText, model.id);
+          lastError = new Error(friendlyMsg);
+          break; // Move to next provider if retries exhausted
+        }
+
+        if (!response.body) {
+          lastError = new Error(`Model ${model.id} returned no body`);
+          break;
+        }
+
+        console.log(`[openrouter-stream] ${model.id} connected, streaming...`);
+
+        // Accumulate full text
+        let fullText = "";
+        let resolveFullText: (value: string) => void;
+        let rejectFullText: (reason: Error) => void;
+
+        const fullTextPromise = new Promise<string>((resolve, reject) => {
+          resolveFullText = resolve;
+          rejectFullText = reject;
+        });
+
+        const encoder = new TextEncoder();
+        const decoder = new TextDecoder();
+        const reader = response.body.getReader();
+
+        const stream = new ReadableStream<Uint8Array>({
+          async pull(controller) {
+            try {
+              const { done, value } = await reader.read();
+              if (done) {
+                controller.close();
+                resolveFullText(fullText);
+                return;
+              }
+
+              const chunk = decoder.decode(value, { stream: true });
+              const lines = chunk.split("\n");
+
+              for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
+                const data = trimmed.slice(6);
+                if (data === "[DONE]") continue;
+
+                try {
+                  const parsed = JSON.parse(data);
+                  const delta = parsed.choices?.[0]?.delta?.content;
+                  if (delta) {
+                    fullText += delta;
+                    controller.enqueue(encoder.encode(delta));
+                  }
+                } catch {
+                  // Partial JSON in SSE chunk, skip
+                }
+              }
+            } catch (err) {
+              const error = err as Error;
+              controller.error(error);
+              rejectFullText(error);
+            }
+          },
+          cancel() {
+            reader.cancel();
+            rejectFullText(new Error("Stream cancelled"));
+          },
+        });
+
+        return { stream, fullText: fullTextPromise };
+      } catch (err) {
+        const error = err as Error;
+        if (error.name === "AbortError") throw error;
+        console.error(
+          `[openrouter-stream] ${model.id} exception:`,
+          error.message
+        );
+        lastError = error;
+        break;
+      }
     }
   }
 
-  throw lastError || new Error("All models failed");
+  throw lastError || new Error("Failed to stream response from google/gemma-4-31b-it:free");
 }
