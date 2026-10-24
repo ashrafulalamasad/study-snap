@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Download, ExternalLink, Sparkles, BookOpen } from "lucide-react";
+import { FileText, ExternalLink } from "lucide-react";
 import type { StoragePastPaper } from "@/lib/pastPapers";
 
 interface PastPaperCardProps {
@@ -8,17 +8,11 @@ interface PastPaperCardProps {
 }
 
 export function PastPaperCard({ paper }: PastPaperCardProps) {
-  const isMid = paper.examType === "Midterm";
-
   return (
     <div className="glass-panel glass-panel-hover rounded-2xl p-5 border border-white/10 flex flex-col justify-between relative overflow-hidden group">
       {/* Top accent gradient bar */}
       <div
-        className={`absolute top-0 left-0 right-0 h-1 ${
-          isMid
-            ? "bg-gradient-to-r from-amber-500 to-indigo-500"
-            : "bg-gradient-to-r from-purple-500 to-pink-500"
-        }`}
+        className="absolute top-0 left-0 right-0 h-1 bg-[#1c1b1a]"
       />
 
       <div>
@@ -29,11 +23,7 @@ export function PastPaperCard({ paper }: PastPaperCardProps) {
           </span>
 
           <span
-            className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-lg border ${
-              isMid
-                ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
-                : "bg-purple-500/15 text-purple-300 border-purple-500/30"
-            }`}
+            className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-lg border bg-[#f5f2ec] text-[#1c1b1a] border-[#e5e1d8]"
           >
             {paper.examType} Exam
           </span>
@@ -69,14 +59,6 @@ export function PastPaperCard({ paper }: PastPaperCardProps) {
           <span>View PDF</span>
         </a>
 
-        <a
-          href={paper.url}
-          download={paper.fileName}
-          className="inline-flex items-center justify-center p-2 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition-colors"
-          title="Download PDF"
-        >
-          <Download className="w-4 h-4" />
-        </a>
       </div>
     </div>
   );
