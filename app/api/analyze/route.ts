@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { callModel, callModelStreaming, cleanModelOutput, type ModelMessage, type ModelContentPart } from "@/lib/ai";
+import {
+  callModelStreaming,
+  cleanModelOutput,
+  type ModelMessage,
+  type ModelContentPart,
+} from "@/lib/ai";
 import { getAnalyzePrompt } from "@/lib/prompts";
 
 // JSON schema for validation
@@ -165,20 +170,29 @@ export async function POST(req: NextRequest) {
           const { reader } = await callModelStreaming(messages);
           const decoder = new TextDecoder();
           let fullText = "";
+          let sseBuffer = "";
           let reading = true;
 
           // Forward chunks to the client and accumulate full text
           while (reading) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+              sseBuffer += decoder.decode();
+              break;
+            }
 
-            const chunkStr = decoder.decode(value, { stream: true });
-            const lines = chunkStr.split("\n");
+            sseBuffer += decoder.decode(value, { stream: true });
+            const events = sseBuffer.split(/\r?\n\r?\n/);
+            sseBuffer = events.pop() || "";
 
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (!trimmed.startsWith("data: ")) continue;
-              const dataStr = trimmed.slice(6);
+            for (const event of events) {
+              const trimmed = event
+                .split(/\r?\n/)
+                .find((line) => line.startsWith("data:"))
+                ?.slice(5)
+                .trim();
+              if (!trimmed) continue;
+              const dataStr = trimmed;
 
               if (dataStr === "[DONE]") {
                 reading = false;
@@ -207,19 +221,20 @@ export async function POST(req: NextRequest) {
           let result: AnalyzeResult;
           try {
             result = JSON.parse(jsonStr);
-          } catch {
-            // Retry: ask the model to fix the JSON
-            console.error("[analyze] First JSON parse failed, retrying...");
-            const fixedText = await callModel([
-              {
-                role: "system",
-                content:
-                  "Fix the following broken JSON and return ONLY valid JSON with no other text:",
-              },
-              { role: "user", content: cleanedText },
-            ]);
-            const fixedJson = extractJSON(fixedText);
-            result = JSON.parse(fixedJson);
+          } catch (error) {
+            console.error(
+              "[analyze] Model returned invalid JSON:",
+              error instanceof Error ? error.message : "unknown error"
+            );
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  error: "The model returned an invalid study result. Please try again.",
+                })}\n\n`
+              )
+            );
+            controller.close();
+            return;
           }
 
           if (!validateResult(result)) {
