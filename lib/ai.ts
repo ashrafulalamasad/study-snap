@@ -16,7 +16,7 @@ const MODELS = [
     keyName: "GEMINI_API_KEY",
   },
   {
-    id: "gemma-4-26b",
+    id: "gemma-4-26b-a4b-it",
     url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
     keyName: "GEMINI_API_KEY",
   },
@@ -135,7 +135,6 @@ export async function callModelStreaming(
           messages,
           max_tokens: 8192,
           temperature: 0.3,
-          stream: true,
         }),
         signal
       );
@@ -146,11 +145,31 @@ export async function callModelStreaming(
         continue;
       }
       if (!response.body) {
-        console.error(`[ai-stream] ${model.id} returned no body`);
         continue;
       }
 
-      return { reader: response.body.getReader(), modelId: model.id };
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (typeof content !== "string" || !content.trim()) {
+        console.error(`[ai-stream] ${model.id} returned empty content`);
+        continue;
+      }
+
+      const encoder = new TextEncoder();
+      const payload = [
+        `data: ${JSON.stringify({
+          choices: [{ delta: { content } }],
+        })}\n\n`,
+        "data: [DONE]\n\n",
+      ].join("");
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode(payload));
+          controller.close();
+        },
+      });
+
+      return { reader: stream.getReader(), modelId: model.id };
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") throw error;
       console.error(

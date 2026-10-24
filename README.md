@@ -35,7 +35,7 @@ StudySnap strictly uses open-weight models with **zero closed proprietary model 
 
 1. **Primary Vision Model**: `gemma-4-31b-it` via [Google AI Studio](https://aistudio.google.com) OpenAI-compatible endpoint (`https://generativelanguage.googleapis.com/v1beta/openai/`)
    - Dense multimodal model capable of deciphering handwritten Bengali script, bilingual notes, diagrams, and exam papers.
-2. **Secondary Vision Fallback**: `gemma-4-26b` via Google AI Studio
+2. **Secondary Vision Fallback**: `gemma-4-26b-a4b-it` via Google AI Studio
    - Automatically engaged if the primary model encounters an error.
 3. **Emergency Fallback**: [`qwen/qwen3.8-27b`](https://groq.com) via Groq API.
 4. **Speech-to-Text (STT)**: Browser Web Speech API with fallback support for [`groq/whisper-large-v3`](https://groq.com).
