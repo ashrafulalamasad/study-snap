@@ -82,7 +82,7 @@ export async function callModel(
         body: JSON.stringify({
           model: model.id,
           messages,
-          max_tokens: 4096,
+          max_tokens: 8192,
           temperature: 0.3,
         }),
         signal,
@@ -158,7 +158,7 @@ export async function callModelStreaming(
         body: JSON.stringify({
           model: model.id,
           messages,
-          max_tokens: 4096,
+          max_tokens: 8192,
           temperature: 0.3,
           stream: true,
         }),
@@ -215,7 +215,11 @@ export async function callModelStreaming(
               if (!trimmed || !trimmed.startsWith("data: ")) continue;
 
               const data = trimmed.slice(6);
-              if (data === "[DONE]") continue;
+              if (data === "[DONE]") {
+                controller.close();
+                resolveFullText(cleanModelOutput(fullText));
+                return;
+              }
 
               try {
                 const parsed = JSON.parse(data);

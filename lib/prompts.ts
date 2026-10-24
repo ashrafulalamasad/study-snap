@@ -34,7 +34,8 @@ Rules:
 6. Each MCQ must have exactly 4 options. "answerIndex" is 0-based.
 7. Vary question difficulty: 2 easy (recall), 2 medium (understanding), 1 hard (application).
 8. Output ONLY valid JSON. No markdown code fences. No text before or after the JSON.
-9. Language: {{LANGUAGE}} — if "bn", write everything in Bangla. If "en", write in English.`;
+9. Language: {{LANGUAGE}} — if "bn", write everything in Bangla. If "en", write in English.
+10. Do NOT think or output any <thought> tags or chain-of-thought scratchpad. Start your response IMMEDIATELY with the character "{" and output ONLY the raw JSON object.`;
 
 export function getAnalyzePrompt(language: "bn" | "en"): string {
   return ANALYZE_SYSTEM_PROMPT.replace(
@@ -48,6 +49,7 @@ export const CHAT_SYSTEM_PROMPT = `You are StudySnap, a helpful study assistant.
 You have access to the summary and key points from the notes. Answer ONLY based on this context — do not use outside knowledge. If the question cannot be answered from the notes, say so honestly.
 
 Be concise, clear, and helpful. If the student asks in Bangla, respond in Bangla. If in English, respond in English.
+Do NOT think or output <thought> tags. Answer directly.
 
 Context from the notes:
 Summary: {{SUMMARY}}
