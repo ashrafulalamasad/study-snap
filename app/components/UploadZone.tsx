@@ -32,31 +32,38 @@ export function UploadZone({
     setIsProcessing(true);
     const newItems: PreparedImage[] = [];
 
-    for (const rawFile of Array.from(files)) {
-      if (!rawFile.type.startsWith("image/") && rawFile.type !== "application/pdf") {
-        continue;
-      }
+    try {
+      for (const rawFile of Array.from(files)) {
+        if (!rawFile.type.startsWith("image/") && rawFile.type !== "application/pdf") {
+          continue;
+        }
 
-      const sourceFiles = rawFile.type === "application/pdf"
-        ? await renderPdfPages(rawFile)
-        : [rawFile];
+        const sourceFiles = rawFile.type === "application/pdf"
+          ? await renderPdfPages(rawFile)
+          : [rawFile];
 
-      for (const sourceFile of sourceFiles) {
-        const file = sourceFile.type === "application/pdf"
-          ? sourceFile
-          : await resizeImage(sourceFile, 1024, 0.85);
-        newItems.push({
-          id: crypto.randomUUID(),
-          file,
-          previewUrl: URL.createObjectURL(file),
-          originalSize: rawFile.size,
-          compressedSize: file.size,
-        });
+        for (const sourceFile of sourceFiles) {
+          const file = sourceFile.type === "application/pdf"
+            ? sourceFile
+            : await resizeImage(sourceFile, 1024, 0.85);
+          newItems.push({
+            id: crypto.randomUUID(),
+            file,
+            previewUrl: URL.createObjectURL(file),
+            originalSize: rawFile.size,
+            compressedSize: file.size,
+          });
+        }
       }
+      setNoteImages((previous) => [...previous, ...newItems]);
+    } catch (error) {
+      console.error(
+        "Failed to process uploaded file:",
+        error instanceof Error ? error.message : "unknown error"
+      );
+    } finally {
+      setIsProcessing(false);
     }
-
-    setNoteImages((previous) => [...previous, ...newItems]);
-    setIsProcessing(false);
   };
 
   const removeImage = (id: string) => {

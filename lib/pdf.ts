@@ -1,5 +1,9 @@
 export async function renderPdfPages(file: File): Promise<File[]> {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    "pdfjs-dist/legacy/build/pdf.worker.min.mjs",
+    import.meta.url
+  ).toString();
   const pdfDocument = await pdfjs.getDocument({
     data: new Uint8Array(await file.arrayBuffer()),
   }).promise;
