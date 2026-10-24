@@ -1,161 +1,226 @@
-# StudySnap ⚡
-> Multimodal AI Academic Assistant for University Students (IIUC, Bangladesh)
+# StudySnap
 
-[![Next.js 16](https://img.shields.io/badge/Next.js-16.4.3-black?logo=next.js)](https://nextjs.org/)
-[![Prisma 7](https://img.shields.io/badge/Prisma-7.10.1-2D3748?logo=prisma)](https://www.prisma.io/)
-[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com/)
-[![TailwindCSS v4](https://img.shields.io/badge/TailwindCSS-v4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
-[![Google AI Studio](https://img.shields.io/badge/Google_AI_Studio-Gemma_4_31B-4285F4)](https://aistudio.google.com/)
+> A multimodal study assistant for university students at IIUC and beyond.
 
----
+StudySnap turns handwritten notes, lecture slides, and question-paper PDFs into a structured study session: a detailed summary, key points, focus topics, and a 10-question quiz grounded only in the uploaded material. Students can choose Bangla or English, review previous sessions, ask follow-up questions, and browse a searchable bank of past exam papers.
 
-## 1. Problem
-University students (particularly at institutions like IIUC in Bangladesh) face several high-friction hurdles during midterm and final exam prep:
-1. **Messy handwritten lecture notes**: Notes taken in hurried classroom sessions mix English terminology with Bengali explanations and complex diagrams. Re-reading them before an exam is time-consuming and exhausting.
-2. **Disconnected past papers**: Students collect photocopies of previous years' semester exam papers, but have no quick way to correlate those exam questions with the specific lectures where those topics were taught.
-3. **Passive studying vs. active recall**: Reading slides repeatedly leads to low retention. Students need fast, verified active-recall quizzes that test *only* what was actually covered in their class notes, without AI hallucinations or out-of-syllabus tangents.
+## The problem
 
----
+University students often prepare from a mixture of handwritten notebooks, photographed slides, and scattered past papers. Important explanations are difficult to search, revision is passive, and generic AI quizzes may introduce information that was never taught in class.
 
-## 2. Solution: StudySnap
-**StudySnap** allows students to simply snap photos of notebook pages or lecture slides and past question papers with their phone camera. Within seconds, it generates:
-- 📝 **Structured synthesis in Bangla or English**: Thorough summaries with clear paragraphs and numbered key takeaways.
-- 🎯 **High-yield exam focus detection**: Detects recurring question topics when past question papers are uploaded and prioritizes them.
-- ⚡ **Interactive 5-question verified quiz**: Tap an option to receive immediate right/wrong feedback, detailed explanations, and an **exact quote line** from the uploaded notes (*"From your notes: '...' "*). Every attempt is tracked in the database to compute weak topics.
-- 💡 **Conceptual short-answer questions**: 3 open-ended review questions with tap-to-reveal model answers.
-- 🤖 **"Ask Your Notes" follow-up Q&A**: Follow-up chat strictly grounded in the session's lecture notes, with optional voice input and text-to-speech read-aloud.
-- 📚 **Session history & past papers bank**: Searchable personal vault of past lectures and previous exam papers keyed by device ID.
+StudySnap addresses that workflow with a simple upload-first experience:
 
----
+1. Upload note images or a PDF.
+2. Choose Bangla or English.
+3. Receive a source-grounded summary and quiz.
+4. Practice the material and save the session for later review.
 
-## 3. How It Works (Models & Links)
+## What StudySnap does
 
-### Open-Weight Vision & Reasoning Stack
-StudySnap strictly uses open-weight models with **zero closed proprietary model APIs**:
+- Reads handwritten notes, lecture slides, and uploaded PDFs.
+- Renders every page of an uploaded PDF in the browser before analysis.
+- Produces a detailed summary, key points, and focus topics.
+- Generates exactly 10 multiple-choice questions with four options each.
+- Generates 3 short-answer questions with model answers.
+- Keeps every quiz question grounded in the uploaded notes.
+- Includes the exact source line used for each multiple-choice question.
+- Tracks quiz attempts and displays progress and weak topics.
+- Supports Bangla and English output.
+- Provides follow-up Q&A about the current study session.
+- Reads summaries and answers aloud with the browser's free Web Speech API.
+- Saves sessions by an anonymous browser `deviceId`, without requiring sign-up.
+- Provides a searchable past-question-paper bank with View PDF links.
 
-1. **Primary Vision Model**: `gemma-4-31b-it` via [Google AI Studio](https://aistudio.google.com) OpenAI-compatible endpoint (`https://generativelanguage.googleapis.com/v1beta/openai/`)
-   - Dense multimodal model capable of deciphering handwritten Bengali script, bilingual notes, diagrams, and exam papers.
-2. **Secondary Vision Fallback**: `gemma-4-26b-a4b-it` via Google AI Studio
-   - Automatically engaged if the primary model encounters an error.
-3. **Emergency Fallback**: [`qwen/qwen3.8-27b`](https://groq.com) via Groq API.
-4. **Speech-to-Text (STT)**: Browser Web Speech API with fallback support for [`groq/whisper-large-v3`](https://groq.com).
-5. **Speech Synthesis (TTS)**: Web SpeechSynthesis API supporting both `bn-BD` and `en-US` voices.
+## Screenshots
 
-### The Core Efficiency Rule
-StudySnap is architected for maximum speed and efficiency:
-- **One vision call per upload**: The model extracts note text, compiles the summary, identifies exam topics, generates 5 MCQs, and writes 3 short questions in a **single streaming multimodal invocation**.
-- **Client-side image resizing**: Images are scaled to $\le 1024\text{px}$ using HTML5 Canvas before upload, slashing network bandwidth, reducing processing latency, and conserving token quota.
-- **Single follow-up call**: Follow-up Q&A queries use lightweight text-only calls containing previously summarized context.
+### Upload notes or questions
 
----
+The home screen keeps the main flow focused: choose a language, upload images or a PDF, and start analysis.
 
-## 4. Architecture & Data Flow
+![StudySnap home upload screen](public/studysnap-home-upload.png)
+
+### Upload and analysis panel
+
+The upload panel accepts JPG, PNG, WEBP, and PDF files. PDF pages are rendered before they are sent for analysis.
+
+![StudySnap upload panel](public/studysnap-upload-panel.png)
+
+### Saved study sessions
+
+Past sessions can be reopened from the device-based history page.
+
+![StudySnap past study sessions](public/studysnap-past-sessions.png)
+
+### Past question-paper bank
+
+Students can search and filter the existing exam-paper collection, then open a paper directly.
+
+![StudySnap exam papers bank](public/studysnap-exam-papers.png)
+
+## How it works
 
 ```mermaid
-graph TD
-    A[Student snaps 1-4 notes + optional past paper] --> B[Canvas client-side resize to 1024px]
-    B --> C[POST /api/analyze SSE Stream]
-    C --> D[Google AI Studio: Gemma 4 31B Vision]
-    D --> E[Strict JSON contract verification & fallback]
-    E --> F[Supabase PostgreSQL via Prisma 7]
-    F --> G[Interactive Results: Summary + Quiz + Proof Quotes]
-    G --> H[POST /api/attempts: Track correct/incorrect]
-    H --> I[ScoreCard: Weak topics calculated]
+flowchart TD
+    A[Student uploads note images or PDF] --> B[Client resizes images and renders PDF pages]
+    B --> C[POST /api/analyze]
+    C --> D[Gemma multimodal analysis]
+    D --> E[Strict JSON validation]
+    E --> F[Save Session and Questions with Prisma]
+    F --> G[Summary, quiz, and short questions]
+    G --> H[POST /api/attempts]
+    G --> I[POST /api/chat for follow-up questions]
 ```
 
-### Database Schema (Prisma 7 + Supabase)
-- **Session**: `id`, `deviceId`, `title`, `language`, `summary`, `keyPoints` (Json), `focusTopics` (String[]), `createdAt`
-- **Question**: `id`, `sessionId`, `question`, `options` (Json), `answerIndex`, `explanation`, `source`, `topic`
-- **Attempt**: `id`, `questionId`, `correct` (Boolean), `createdAt`
-- **PastPaper**: `id`, `deviceId`, `course`, `topics` (String[]), `text`, `createdAt`
+The analysis request contains all uploaded pages and asks the model for one strict JSON response. The server validates the response before saving it. The application does not store the original note photos in the database.
 
----
+### AI models
 
-## 5. How to Run Locally
+StudySnap uses open-weight models only:
+
+- **Primary model:** `gemma-4-31b-it`
+- **Fallback model:** `gemma-4-26b-a4b-it`
+- **Emergency fallback:** `qwen/qwen3.8-27b` through Groq when configured
+
+The primary and fallback models are accessed through Google's OpenAI-compatible endpoint. Provider selection, model names, retry behavior, and fallback handling are centralized in [`lib/ai.ts`](lib/ai.ts), so API routes do not hardcode provider logic.
+
+Learn more:
+
+- [Gemma documentation](https://ai.google.dev/gemma)
+- [Google AI Studio](https://aistudio.google.com/)
+- [Groq](https://groq.com/)
+
+### Prompt and response contract
+
+The prompt in [`lib/prompts.ts`](lib/prompts.ts) requires:
+
+- Output in the selected language.
+- Detailed explanations based only on the uploaded content.
+- Exactly 10 MCQs.
+- Exactly 4 options per MCQ.
+- Exactly 3 short questions.
+- A source line from the notes for every MCQ.
+
+If the model returns invalid JSON or the wrong question counts, the server rejects the result instead of saving an incomplete session.
+
+### PDF processing
+
+PDFs are not stored as raw note files. In the browser, [`lib/pdf.ts`](lib/pdf.ts) uses `pdfjs-dist` to render every page to a PNG. Those page images go through the same analysis path as uploaded note photographs. This allows multi-page PDFs to be analyzed while keeping the database limited to structured study-session data.
+
+## Tech stack
+
+- [Next.js](https://nextjs.org/) 16 App Router
+- TypeScript
+- React 19
+- Tailwind CSS 4
+- [Prisma](https://www.prisma.io/) 7
+- [Supabase PostgreSQL](https://supabase.com/)
+- [Supabase Storage](https://supabase.com/storage) for the public `past-papers` bucket
+- `pdfjs-dist` for client-side PDF rendering
+- Browser Web Speech API for free read-aloud
+- [Vercel](https://vercel.com/) deployment target
+
+## Database
+
+The Prisma schema contains four application models:
+
+- **Session**: title, language, summary, key points, focus topics, device ID, and creation time.
+- **Question**: quiz question, four options, answer index, explanation, source quote, and topic.
+- **Attempt**: whether a question attempt was correct and when it was submitted.
+- **PastPaper**: course information, topics, searchable text, device ID, and public PDF URL.
+
+Raw note photos are never written to the database. Past-paper PDFs are hosted in the public Supabase Storage bucket `past-papers`, with their public URL stored in the `PastPaper` record.
+
+## Run locally
 
 ### Prerequisites
-- Node.js 18+ (tested on Node 20 & 22)
-- PostgreSQL database (Supabase instance)
-- Google AI Studio API key (`GEMINI_API_KEY`)
 
-### 1. Clone & Install
+- Node.js 20 or newer recommended
+- A Supabase PostgreSQL database
+- A Google AI Studio API key for Gemma
+- A Groq API key only if emergency fallback or optional speech-to-text is enabled
+
+### Install
+
 ```bash
 git clone https://github.com/ashrafulalamasad/study-snap.git
 cd study-snap
 npm install
 ```
 
-### 2. Configure Environment Variables
-Create a `.env` file in the project root:
+### Configure environment variables
+
+Create a local `.env` file. Never commit it.
+
 ```env
-# Supabase pooled transaction connection (port 6543)
 DATABASE_URL="postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres?pgbouncer=true"
-
-# Supabase direct session connection (port 5432)
 DIRECT_URL="postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres"
+GEMINI_API_KEY="your-google-ai-studio-key"
 
-# Google AI Studio API Key for Gemma Vision
-GEMINI_API_KEY="AIzaSy..."
-ELEVENLABS_API_KEY="your-elevenlabs-key"
-# Optional custom ElevenLabs voice
-# ELEVENLABS_VOICE_ID="your-voice-id"
-
-# (Optional) Groq API Key for emergency fallback
-GROQ_API_KEY="gsk_..."
+# Optional emergency model and optional speech-to-text support
+GROQ_API_KEY="your-groq-key"
 ```
 
-### 3. Sync Database Schema
-```bash
-# Generate Prisma 7 TypeScript client
-npx prisma generate
+### Generate Prisma and sync the database
 
-# Push schema directly to Supabase PostgreSQL
+```bash
+npx prisma generate
 npx prisma db push
 ```
 
-### 4. Start Development Server
+This project intentionally uses `prisma db push` for the hackathon database setup. The `postinstall` script also runs `prisma generate` after installation.
+
+### Start the development server
+
 ```bash
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
 
----
+Open [http://localhost:3000](http://localhost:3000).
 
-## 6. Features & UI Walkthrough
+### Validate the production build
 
-1. **Upload & Camera Interface**:
-   - Multi-page selector supporting up to 4 notebook photos with drag-and-drop or direct phone camera snap.
-   - Dedicated secondary slot for 1–2 past-exam question papers.
-   - Instant client-side canvas compression displaying KB sizes and preview thumbnails.
-2. **Language Toggle**:
-   - Instant toggle between **বাংলা (Bangla)** and **English**.
-3. **Interactive Active-Recall Quiz**:
-   - 4-choice randomized MCQs.
-   - Immediate color feedback (emerald for correct, rose for wrong).
-   - Provenance citation: `"From your notes: '...' "` displays the verbatim phrase from the lecture notes.
-   - Each attempt is saved to `/api/attempts` in real time.
-4. **Performance & Weak Topics ScoreCard**:
-   - Calculated accuracy percentage and assessment grade.
-   - Flags concepts that were answered incorrectly as **Identified Weak Topics to Revisit**.
-   - "Practice Weak Topics Only" toggle lets students filter questions to target their review.
-5. **Exam Paper Bank**:
-   - Searchable repository of previously uploaded past semester exams. Filter by course code, topic, or question keywords.
-6. **Voice Input & TTS**:
-   - Speech synthesis for listening to summaries and answers on the go.
-   - Voice microphone input for hands-free queries during late-night study sessions.
+```bash
+npm run build
+```
 
----
+## API routes
 
-## 7. What's Not Done Yet (Honest Disclosures)
-- **Authentication**: For hackathon velocity, session history and past papers are keyed to an anonymous browser-generated `deviceId` stored in `localStorage`. In a production deployment, this would be replaced with student institutional login (e.g., IIUC Student ID / Google OAuth).
-- **Offline PWA Sync**: Sessions currently require an active internet connection to stream vision inferences from Google AI Studio. Adding ServiceWorker caching and indexedDB offline persistence is planned for v2.
-- **Diagram Vectorization**: While the multimodal vision model reads handwritten diagrams and circuit sketches, generating interactive SVG re-drawings is slated for a future iteration.
+- `POST /api/analyze` — analyzes uploaded image/PDF pages, validates the JSON contract, and saves the session and questions.
+- `POST /api/attempts` — records a quiz attempt.
+- `GET /api/history` — returns sessions for the current browser device.
+- `GET /api/sessions/[id]` — reopens an owned session.
+- `GET /api/past-papers` — searches the past-paper bank.
+- `POST /api/chat` — answers one follow-up question using the session context.
+- `POST /api/stt` — optional speech-to-text route when the required provider is configured.
 
----
+The app uses a browser-generated UUID in `localStorage` as `deviceId`. API requests send that identifier so one browser cannot freely read another browser's sessions.
 
-## 8. Credits & Acknowledgments
-- **Institution**: International Islamic University Chittagong (IIUC), Bangladesh
-- **AI Models**: Google DeepMind Gemma open-weight team ([Gemma 4 31B Vision](https://aistudio.google.com))
-- **Inference Infrastructure**: [Google AI Studio](https://aistudio.google.com) & [Groq](https://groq.com)
-- **Database & Hosting**: [Supabase](https://supabase.com) & [Vercel](https://vercel.com)
-- **Framework**: [Next.js](https://nextjs.org) & [Prisma ORM](https://prisma.io)
+## Design principles
+
+- Light paper-and-ink visual system.
+- Mobile-first upload flow.
+- No sign-up required for the demo.
+- No raw note-photo persistence.
+- No proprietary model API in the analysis path.
+- One analysis call per upload and one model call per follow-up question.
+- User-facing errors are translated into clear application messages rather than exposing raw provider failures.
+
+## What's not finished yet
+
+- **Authentication:** History is demo-scoped to an anonymous browser-generated `deviceId`. A production version should add IIUC or institutional student login.
+- **Large-document scaling:** Very large PDFs may exceed browser request, image, or model-token limits. A production version should add server-side page batching or a clear upload-size policy.
+- **Offline support:** Analysis currently requires an internet connection.
+- **Diagram reconstruction:** The app can analyze diagrams as part of the uploaded page, but it does not yet redraw them as interactive graphics.
+- **Final deployment evidence:** The screenshots in this README document the implemented UI; a deployed demo URL and final event submission are still external submission steps.
+
+## Credits
+
+- **Project:** StudySnap
+- **Context:** International Islamic University Chittagong (IIUC), Bangladesh
+- **AI:** Google DeepMind Gemma open-weight models
+- **Inference:** Google AI Studio, with optional Groq emergency fallback
+- **Database:** Supabase PostgreSQL and Prisma
+- **Storage:** Supabase Storage
+- **Application:** Next.js, React, TypeScript, and Tailwind CSS
+
+Built for students who want to turn the notes they already have into a more active, focused revision session.
