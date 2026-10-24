@@ -91,14 +91,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Collect note images (up to 4)
+    // Collect all rendered note pages. PDFs are rendered in the browser before upload.
     const noteImages: string[] = [];
-    for (let i = 0; i < 4; i++) {
-      const file = formData.get(`note_${i}`) as File | null;
+    const noteEntries = Array.from(formData.entries())
+      .filter(([key, value]) => key.startsWith("note_") && value instanceof File)
+      .sort(([a], [b]) => {
+        const aIndex = Number(a.slice(5));
+        const bIndex = Number(b.slice(5));
+        return aIndex - bIndex;
+      });
+    for (const [, value] of noteEntries) {
+      const file = value as File;
       if (file) {
         const buffer = Buffer.from(await file.arrayBuffer());
         const base64 = buffer.toString("base64");
-        const mimeType = file.type || "image/jpeg";
+        const mimeType = file.type.startsWith("image/") ? file.type : "image/jpeg";
         noteImages.push(`data:${mimeType};base64,${base64}`);
       }
     }

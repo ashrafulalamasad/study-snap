@@ -18,6 +18,7 @@ export function SummaryCard({
 }: SummaryCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [speechError, setSpeechError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
 
@@ -33,6 +34,7 @@ export function SummaryCard({
 
     const textToRead = `${title}. ${summary}. Key points: ${keyPoints.join(". ")}`;
     setIsPlaying(true);
+    setSpeechError(null);
     try {
       const response = await fetch("/api/tts", {
         method: "POST",
@@ -40,7 +42,9 @@ export function SummaryCard({
         body: JSON.stringify({ text: textToRead, language }),
       });
 
-      if (!response.ok || !response.body) throw new Error("ElevenLabs unavailable");
+      if (!response.ok || !response.body) {
+        throw new Error("ElevenLabs could not generate audio.");
+      }
       const audioUrl = URL.createObjectURL(await response.blob());
       audioUrlRef.current = audioUrl;
       const audio = new Audio(audioUrl);
@@ -51,13 +55,9 @@ export function SummaryCard({
         audioUrlRef.current = null;
       };
       await audio.play();
-    } catch {
-      const utterance = new SpeechSynthesisUtterance(textToRead);
-      utterance.lang = language === "bn" ? "bn-BD" : "en-US";
-      utterance.onend = () => setIsPlaying(false);
-      utterance.onerror = () => setIsPlaying(false);
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
+    } catch (error) {
+      setIsPlaying(false);
+      setSpeechError(error instanceof Error ? error.message : "ElevenLabs audio failed.");
     }
   };
 
@@ -112,10 +112,15 @@ export function SummaryCard({
             ) : (
               <>
                 <Volume2 className="w-3.5 h-3.5" />
-                <span>Listen</span>
+                <span>Listen with ElevenLabs</span>
               </>
             )}
           </button>
+          {speechError && (
+            <span className="text-[11px] text-rose-600" role="status">
+              {speechError}
+            </span>
+          )}
 
           <button
             type="button"

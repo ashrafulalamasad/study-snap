@@ -42,7 +42,6 @@ export function ChatBox({ sessionId }: ChatBoxProps) {
     if (activeSpeechId === id) {
       audioRef.current?.pause();
       audioRef.current = null;
-      window.speechSynthesis.cancel();
       setActiveSpeechId(null);
       return;
     }
@@ -54,17 +53,17 @@ export function ChatBox({ sessionId }: ChatBoxProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, language: "en" }),
       });
-      if (!response.ok) throw new Error("ElevenLabs unavailable");
+      if (!response.ok) throw new Error("ElevenLabs could not generate audio.");
       const audio = new Audio(URL.createObjectURL(await response.blob()));
       audioRef.current = audio;
       audio.onended = () => setActiveSpeechId(null);
       await audio.play();
-    } catch {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.onend = () => setActiveSpeechId(null);
-      utterance.onerror = () => setActiveSpeechId(null);
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
+    } catch (error) {
+      console.error(
+        "ElevenLabs audio failed:",
+        error instanceof Error ? error.message : "unknown error"
+      );
+      setActiveSpeechId(null);
     }
   };
 

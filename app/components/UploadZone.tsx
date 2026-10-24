@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Camera, FileText, X } from "lucide-react";
 import { resizeImage } from "@/lib/image";
+import { renderPdfPages } from "@/lib/pdf";
 
 export interface PreparedImage {
   id: string;
@@ -29,30 +30,32 @@ export function UploadZone({
 
   const processFiles = async (files: FileList | File[]) => {
     setIsProcessing(true);
-    const availableSlots = 4 - noteImages.length;
     const newItems: PreparedImage[] = [];
 
-    for (const rawFile of Array.from(files).slice(0, availableSlots)) {
+    for (const rawFile of Array.from(files)) {
       if (!rawFile.type.startsWith("image/") && rawFile.type !== "application/pdf") {
         continue;
       }
 
-      const originalSize = rawFile.size;
-      const file = rawFile.type === "application/pdf"
-        ? rawFile
-        : await resizeImage(rawFile, 1024, 0.85);
-      const previewUrl = URL.createObjectURL(file);
+      const sourceFiles = rawFile.type === "application/pdf"
+        ? await renderPdfPages(rawFile)
+        : [rawFile];
 
-      newItems.push({
-        id: crypto.randomUUID(),
-        file,
-        previewUrl,
-        originalSize,
-        compressedSize: file.size,
-      });
+      for (const sourceFile of sourceFiles) {
+        const file = sourceFile.type === "application/pdf"
+          ? sourceFile
+          : await resizeImage(sourceFile, 1024, 0.85);
+        newItems.push({
+          id: crypto.randomUUID(),
+          file,
+          previewUrl: URL.createObjectURL(file),
+          originalSize: rawFile.size,
+          compressedSize: file.size,
+        });
+      }
     }
 
-    setNoteImages((previous) => [...previous, ...newItems].slice(0, 4));
+    setNoteImages((previous) => [...previous, ...newItems]);
     setIsProcessing(false);
   };
 
@@ -85,12 +88,12 @@ export function UploadZone({
               <span className="text-xs text-rose-400 font-normal ml-2">*Required</span>
             </h3>
             <p className="text-xs text-slate-400">
-              Add up to 4 images or PDF files. Past papers are already available in the Exam Papers bank.
+              Add images or PDF files. Every PDF page will be included in the analysis.
             </p>
           </div>
         </div>
         <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-300">
-          {noteImages.length}/4
+          {noteImages.length} page{noteImages.length === 1 ? "" : "s"}
         </span>
       </div>
 
@@ -100,14 +103,14 @@ export function UploadZone({
         accept="image/*,.pdf,application/pdf"
         multiple
         className="hidden"
-        disabled={disabled || isProcessing || noteImages.length >= 4}
+        disabled={disabled || isProcessing}
         onChange={(event) => {
           if (event.target.files) void processFiles(event.target.files);
           event.target.value = "";
         }}
       />
 
-      {noteImages.length < 4 && (
+      {!isProcessing && (
         <div
           onDragOver={(event) => {
             event.preventDefault();
@@ -130,7 +133,7 @@ export function UploadZone({
               Tap to choose files or take a photo
             </p>
             <p className="text-xs text-slate-400">
-              JPG, PNG, WEBP, or PDF · images resized to about 1024px
+              JPG, PNG, WEBP, or PDF · PDF pages are rendered before analysis
             </p>
           </div>
         </div>
