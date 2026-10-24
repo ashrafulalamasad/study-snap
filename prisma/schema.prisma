@@ -6,3 +6,53 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Session {
+  id          String     @id @default(cuid())
+  deviceId    String
+  title       String
+  language    String     @default("en")
+  summary     String
+  keyPoints   Json
+  focusTopics String[]
+  createdAt   DateTime   @default(now())
+  questions   Question[]
+
+  @@index([deviceId])
+}
+
+model Question {
+  id          String    @id @default(cuid())
+  sessionId   String
+  question    String
+  options     Json
+  answerIndex Int
+  explanation String
+  source      String
+  topic       String
+  session     Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  attempts    Attempt[]
+
+  @@index([sessionId])
+}
+
+model Attempt {
+  id         String   @id @default(cuid())
+  questionId String
+  correct    Boolean
+  createdAt  DateTime @default(now())
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model PastPaper {
+  id        String   @id @default(cuid())
+  deviceId  String
+  course    String
+  topics    String[]
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([deviceId])
+}
