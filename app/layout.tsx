@@ -31,9 +31,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col pb-16 md:pb-0 text-slate-100">
+      <body className="min-h-full flex flex-col pb-16 md:pb-0 text-slate-900">
         <Suspense fallback={<div className="h-16 w-full glass-panel border-b border-white/10" />}>
           <Navbar />
         </Suspense>

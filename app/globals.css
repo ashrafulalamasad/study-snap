@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --background: #090d16;
-  --foreground: #f1f5f9;
-  --card-bg: rgba(18, 24, 38, 0.7);
-  --card-border: rgba(255, 255, 255, 0.08);
+  --background: #faf8f3;
+  --foreground: #1c1b1a;
+  --card-bg: #ffffff;
+  --card-border: #e5e1d8;
 }
 
 @theme inline {
@@ -18,33 +18,24 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   min-height: 100vh;
-  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-image: 
-    radial-gradient(at 15% 15%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
-    radial-gradient(at 85% 20%, rgba(168, 85, 247, 0.10) 0px, transparent 50%),
-    radial-gradient(at 50% 85%, rgba(14, 165, 233, 0.08) 0px, transparent 50%);
-  background-attachment: fixed;
+  font-family: "Instrument Sans", var(--font-geist-sans), sans-serif;
 }
 
-/* Glassmorphism helpers */
 .glass-panel {
-  background: rgba(17, 24, 39, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 8px 24px rgba(28, 27, 26, 0.06);
 }
 
 .glass-panel-hover {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .glass-panel-hover:hover {
-  border-color: rgba(99, 102, 241, 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px -10px rgba(99, 102, 241, 0.25);
+  border-color: #b9b2a5;
+  box-shadow: 0 12px 30px rgba(28, 27, 26, 0.1);
 }
 
-/* Custom subtle scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -53,24 +44,24 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: #c9c2b6;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: #a69d8f;
 }
 
-@keyframes pulse-glow {
-  0%, 100% {
-    opacity: 0.6;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.9;
-    transform: scale(1.02);
-  }
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 3s infinite ease-in-out;
+/* Existing component utilities are kept for behavior, but map to the light design system. */
+.text-white { color: #1c1b1a !important; }
+.text-slate-100, .text-slate-200, .text-slate-300 { color: #403d38 !important; }
+.text-slate-400, .text-slate-500 { color: #746d63 !important; }
+.border-white\/5, .border-white\/10, .border-white\/15 { border-color: #e5e1d8 !important; }
+.bg-white\/5, .bg-white\/10 { background-color: #f5f2ec !important; }
+.bg-white\/\[0\.02\], .bg-white\/\[0\.03\], .bg-white\/\[0\.04\] { background-color: #faf8f3 !important; }
+.bg-indigo-600, .bg-indigo-500 { background-color: #1c1b1a !important; }
+.text-indigo-300, .text-indigo-400, .text-indigo-500 { color: #1c1b1a !important; }
+.border-indigo-500\/20, .border-indigo-500\/30, .border-indigo-500\/50 { border-color: #b9b2a5 !important; }
+.bg-indigo-500\/10, .bg-indigo-500\/15, .bg-indigo-500\/20 { background-color: #f0ede6 !important; }
+.bg-gradient-to-r, .bg-gradient-to-tr, .bg-gradient-to-b {
+  background-image: none !important;
 }
