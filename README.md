@@ -4,6 +4,10 @@
 
 StudySnap turns handwritten notes, lecture slides, and question-paper PDFs into a structured study session: a detailed summary, key points, focus topics, and a 10-question quiz grounded only in the uploaded material. Students can choose Bangla or English, review previous sessions, ask follow-up questions, and browse a searchable bank of past exam papers.
 
+## Live demo
+
+Try the deployed application at **[studysnapiiuc.vercel.app](https://studysnapiiuc.vercel.app/)**.
+
 ## The problem
 
 University students often prepare from a mixture of handwritten notebooks, photographed slides, and scattered past papers. Important explanations are difficult to search, revision is passive, and generic AI quizzes may introduce information that was never taught in class.
