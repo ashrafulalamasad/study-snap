@@ -51,23 +51,41 @@ body {
   background: #a69d8f;
 }
 
-/* Existing component utilities are kept for behavior, but map to the light design system. */
+/* Legacy utility classes map to the neutral paper-and-ink palette. */
 .text-white { color: #1c1b1a !important; }
 .text-slate-100, .text-slate-200, .text-slate-300 { color: #403d38 !important; }
 .text-slate-400, .text-slate-500 { color: #746d63 !important; }
 .border-white\/5, .border-white\/10, .border-white\/15 { border-color: #e5e1d8 !important; }
 .bg-white\/5, .bg-white\/10 { background-color: #f5f2ec !important; }
 .bg-white\/\[0\.02\], .bg-white\/\[0\.03\], .bg-white\/\[0\.04\] { background-color: #faf8f3 !important; }
-.bg-indigo-600, .bg-indigo-500 { background-color: #1c1b1a !important; }
+.bg-indigo-600, .bg-indigo-500,
+.bg-purple-600, .bg-purple-500,
+.bg-violet-600, .bg-violet-500,
+.bg-pink-600, .bg-pink-500 { background-color: #1c1b1a !important; }
 .bg-indigo-600.text-white,
 .bg-indigo-500.text-white,
+.bg-purple-600.text-white,
+.bg-purple-500.text-white,
+.bg-violet-600.text-white,
+.bg-violet-500.text-white,
+.bg-pink-600.text-white,
+.bg-pink-500.text-white,
 .bg-gradient-to-r.text-white,
 .bg-gradient-to-tr.text-white {
   color: #ffffff !important;
 }
-.text-indigo-300, .text-indigo-400, .text-indigo-500 { color: #1c1b1a !important; }
-.border-indigo-500\/20, .border-indigo-500\/30, .border-indigo-500\/50 { border-color: #b9b2a5 !important; }
-.bg-indigo-500\/10, .bg-indigo-500\/15, .bg-indigo-500\/20 { background-color: #f0ede6 !important; }
+.text-indigo-300, .text-indigo-400, .text-indigo-500,
+.text-purple-300, .text-purple-400, .text-purple-500,
+.text-violet-300, .text-violet-400, .text-violet-500,
+.text-pink-300, .text-pink-400, .text-pink-500 { color: #1c1b1a !important; }
+.border-indigo-500\/20, .border-indigo-500\/30, .border-indigo-500\/50,
+.border-purple-500\/20, .border-purple-500\/30, .border-purple-500\/50,
+.border-violet-500\/20, .border-violet-500\/30, .border-violet-500\/50,
+.border-pink-500\/20, .border-pink-500\/30, .border-pink-500\/50 { border-color: #b9b2a5 !important; }
+.bg-indigo-500\/10, .bg-indigo-500\/15, .bg-indigo-500\/20,
+.bg-purple-500\/10, .bg-purple-500\/15, .bg-purple-500\/20,
+.bg-violet-500\/10, .bg-violet-500\/15, .bg-violet-500\/20,
+.bg-pink-500\/10, .bg-pink-500\/15, .bg-pink-500\/20 { background-color: #f0ede6 !important; }
 .bg-gradient-to-r, .bg-gradient-to-tr, .bg-gradient-to-b {
   background-image: none !important;
 }

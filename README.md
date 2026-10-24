@@ -96,6 +96,9 @@ DIRECT_URL="postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabas
 
 # Google AI Studio API Key for Gemma Vision
 GEMINI_API_KEY="AIzaSy..."
+ELEVENLABS_API_KEY="your-elevenlabs-key"
+# Optional custom ElevenLabs voice
+# ELEVENLABS_VOICE_ID="your-voice-id"
 
 # (Optional) Groq API Key for emergency fallback
 GROQ_API_KEY="gsk_..."

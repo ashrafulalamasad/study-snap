@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { BookOpen, CheckCircle2, Volume2, VolumeX, Copy, Check } from "lucide-react";
 
 interface SummaryCardProps {
@@ -18,29 +18,47 @@ export function SummaryCard({
 }: SummaryCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [copied, setCopied] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
 
-  const toggleSpeech = () => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-
+  const toggleSpeech = async () => {
     if (isPlaying) {
-      window.speechSynthesis.cancel();
+      audioRef.current?.pause();
+      audioRef.current = null;
+      if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
       setIsPlaying(false);
       return;
     }
 
-    window.speechSynthesis.cancel();
     const textToRead = `${title}. ${summary}. Key points: ${keyPoints.join(". ")}`;
-    const utterance = new SpeechSynthesisUtterance(textToRead);
-
-    // Set voice language if possible
-    utterance.lang = language === "bn" ? "bn-BD" : "en-US";
-    utterance.rate = 1.0;
-
-    utterance.onend = () => setIsPlaying(false);
-    utterance.onerror = () => setIsPlaying(false);
-
     setIsPlaying(true);
-    window.speechSynthesis.speak(utterance);
+    try {
+      const response = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: textToRead, language }),
+      });
+
+      if (!response.ok || !response.body) throw new Error("ElevenLabs unavailable");
+      const audioUrl = URL.createObjectURL(await response.blob());
+      audioUrlRef.current = audioUrl;
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      audio.onended = () => {
+        setIsPlaying(false);
+        URL.revokeObjectURL(audioUrl);
+        audioUrlRef.current = null;
+      };
+      await audio.play();
+    } catch {
+      const utterance = new SpeechSynthesisUtterance(textToRead);
+      utterance.lang = language === "bn" ? "bn-BD" : "en-US";
+      utterance.onend = () => setIsPlaying(false);
+      utterance.onerror = () => setIsPlaying(false);
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
   };
 
   const copyToClipboard = async () => {
