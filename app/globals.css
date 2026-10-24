@@ -59,9 +59,19 @@ body {
 .bg-white\/5, .bg-white\/10 { background-color: #f5f2ec !important; }
 .bg-white\/\[0\.02\], .bg-white\/\[0\.03\], .bg-white\/\[0\.04\] { background-color: #faf8f3 !important; }
 .bg-indigo-600, .bg-indigo-500 { background-color: #1c1b1a !important; }
+.bg-indigo-600.text-white,
+.bg-indigo-500.text-white,
+.bg-gradient-to-r.text-white,
+.bg-gradient-to-tr.text-white {
+  color: #ffffff !important;
+}
 .text-indigo-300, .text-indigo-400, .text-indigo-500 { color: #1c1b1a !important; }
 .border-indigo-500\/20, .border-indigo-500\/30, .border-indigo-500\/50 { border-color: #b9b2a5 !important; }
 .bg-indigo-500\/10, .bg-indigo-500\/15, .bg-indigo-500\/20 { background-color: #f0ede6 !important; }
 .bg-gradient-to-r, .bg-gradient-to-tr, .bg-gradient-to-b {
   background-image: none !important;
+}
+.bg-gradient-to-r,
+.bg-gradient-to-tr {
+  background-color: #1c1b1a !important;
 }
